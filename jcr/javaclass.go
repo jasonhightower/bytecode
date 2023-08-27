@@ -3,11 +3,15 @@ package main
 import (
 	"fmt"
 	"strconv"
+    "io"
 )
 
 type CpIndex uint16
 func (c CpIndex) String() string {
     return fmt.Sprintf("#%d", c)
+}
+type ClassWriter interface {
+    Write(w *io.Writer, c *Class) error
 }
 
 type Class struct {

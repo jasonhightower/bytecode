@@ -1,4 +1,4 @@
-package shared
+package bytecode
 
 func ReadByteCode(bytecode []byte) []Instr {
     var instrs []Instr

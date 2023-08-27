@@ -1,4 +1,4 @@
-package shared
+package bytecode
 
 import (
 	"fmt"

@@ -4,8 +4,6 @@ import (
     "encoding/binary"
     "io"
     "fmt"
-
-    . "github.com/jasonhightower/bytecode/shared"
 )
 
 func ReadClass(r *io.Reader) (*Class, error) {
@@ -26,24 +24,18 @@ func ReadClass(r *io.Reader) (*Class, error) {
     mustRead(r, &class.ThisIndex)
     mustRead(r, &class.SuperIndex)
 
-    fmt.Println(class.ThisIndex)
-    fmt.Println(class.SuperIndex)
-    
     var count uint16
-    fmt.Println(count)
     mustRead(r, &count)
     class.Interfaces = make([]CpIndex, count)
     mustRead(r, &class.Interfaces)
     
     mustRead(r, &count)
-    fmt.Println(count)
     class.Fields = make([]Field, count)
     for i := 0; i < int(count); i++ {
         mustReadField(r, &class.Fields[i])
     }
 
     mustRead(r, &count)
-    fmt.Println(count)
     class.Methods = make([]Method, count)
     for i := 0; i < int(count); i++ {
         mustReadMethod(r, &class.Methods[i])

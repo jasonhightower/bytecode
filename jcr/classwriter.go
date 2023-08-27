@@ -6,10 +6,11 @@ import (
 	"fmt"
 	"io"
 	"strconv"
-    . "github.com/jasonhightower/bytecode/shared"
+    . "github.com/jasonhightower/bytecode"
 )
+type KrakatauWriter struct {}
 
-func Write(w *io.Writer, class *Class) error {
+func (k KrakatauWriter) Write(w *io.Writer, class *Class) error {
     cp := class.ConstantPool
 
     classRef := (*cp.Get(class.ThisIndex)).(ConstClass)
@@ -23,11 +24,12 @@ func Write(w *io.Writer, class *Class) error {
     io.WriteString(*w, ".super ")
     classRef = (*cp.Get(class.SuperIndex)).(ConstClass)
     io.WriteString(*w, cp.GetUtf8(classRef.NameIndex))
-    io.WriteString(*w, "\n\n")
+    io.WriteString(*w, "\n")
 
     methodL := len(class.Methods) 
     for i := 0; i < methodL; i++ {
         method := class.Methods[i]
+        io.WriteString(*w, "\n")
         io.WriteString(*w, ".method")
         io.WriteString(*w, flags(method.Flags))
         io.WriteString(*w, " ")
@@ -148,10 +150,54 @@ func Write(w *io.Writer, class *Class) error {
                 break
             }
         }
-        io.WriteString(*w, ".end method\n\n")
+        io.WriteString(*w, ".end method\n")
     }
 
     return nil
+}
+
+type JavapWriter struct {}
+func (j JavapWriter) Write(w *io.Writer, c *Class) error {
+        io.WriteString(*w, fmt.Sprintf("Java Class Version: %d.%d\n", c.Major, c.Minor))
+        io.WriteString(*w, fmt.Sprintf("  IsPublic: %t\n", c.Flags.IsPublic()))
+        io.WriteString(*w, fmt.Sprintf("  this: #%d\n", c.ThisIndex))
+        io.WriteString(*w, fmt.Sprintf("  super: #%d\n", c.SuperIndex))
+        io.WriteString(*w, fmt.Sprintf("  interfaces: %d\n", len(c.Interfaces)))
+        io.WriteString(*w, fmt.Sprintf("  fields: %d\n", len(c.Fields)))
+        io.WriteString(*w, fmt.Sprintf("  methods: %d\n", len(c.Methods)))
+        for i := 0; i < len(c.Methods); i++ {
+            io.WriteString(*w, fmt.Sprintf("    #%d\n", c.Methods[i].NameIndex))
+            for j := 0; j < len(c.Methods[i].Attributes); j++ {
+                io.WriteString(*w, fmt.Sprintf("      #%d\n", c.Methods[i].Attributes[j].NameIndex))
+                cd := c.ConstantPool.Constants[c.Methods[i].Attributes[j].NameIndex - 1]
+                var utf8 ConstUtf8
+                utf8 = cd.(ConstUtf8)
+                io.WriteString(*w, fmt.Sprintf("     %s\n", string(utf8.Data)))
+                if "Code" == string(utf8.Data) {
+                    var ior io.Reader
+                    ior = bytes.NewReader(c.Methods[i].Attributes[j].Info)
+                    var ca Code
+                    ReadCode(&ior, &ca)
+    //                readCodeAttribute(&ior, &ca)
+                    io.WriteString(*w, "       code:\n")
+                    instrs:= ReadByteCode(ca.ByteCode)
+                    for k := 0; k < len(instrs); k++ {
+                        io.WriteString(*w, fmt.Sprintf("%s\n", instrs[k]))
+                    }
+    //                readBytecode(ca.Code)
+                }        
+            }
+        }
+        io.WriteString(*w, fmt.Sprintf("  attributes: %d\n", len(c.Attributes)))
+        io.WriteString(*w, fmt.Sprintf("  Constant pool count: %d\n", c.ConstantPool.Count()))
+        for i := 1; i < int(c.ConstantPool.Count()); i++ {
+            c := c.ConstantPool.Get(CpIndex(i))
+            io.WriteString(*w, fmt.Sprintf("   %d | %s\n", i, *c))
+        }
+
+        io.WriteString(*w, "\n")
+        io.WriteString(*w, "\n")
+        return nil
 }
 
 func flags(f AccessFlag) string {
