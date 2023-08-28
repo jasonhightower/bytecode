@@ -1,9 +1,6 @@
 GO ?= go
 
-all: build install
-
-install:
-	$(GO) install ./...
+all: build
 
 build:
-	$(GO) build jcr/main.go
+	$(GO) build
